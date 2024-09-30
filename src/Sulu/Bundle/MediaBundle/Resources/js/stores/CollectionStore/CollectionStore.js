@@ -21,7 +21,6 @@ export default class CollectionStore {
             },
             {
                 depth: 1,
-                breadcrumb: true,
                 parent: true,
             }
         );

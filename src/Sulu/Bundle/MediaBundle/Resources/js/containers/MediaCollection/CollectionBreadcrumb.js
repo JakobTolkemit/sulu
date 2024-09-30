@@ -5,7 +5,7 @@ import {observer} from 'mobx-react';
 import {Breadcrumb} from 'sulu-admin-bundle/components';
 import {translate} from 'sulu-admin-bundle/utils';
 import {ResourceStore} from 'sulu-admin-bundle/stores';
-import type {BreadcrumbItem, BreadcrumbItems} from './types';
+import type {BreadcrumbItem} from './types';
 
 type Props = {
     onNavigate: (collectionId?: string | number) => void,
@@ -21,7 +21,7 @@ class CollectionBreadcrumb extends React.Component<Props> {
         };
     }
 
-    @computed get breadcrumb(): ?BreadcrumbItems {
+    @computed get current(): ?BreadcrumbItem {
         const {resourceStore} = this.props;
         const {data} = resourceStore;
 
@@ -29,14 +29,18 @@ class CollectionBreadcrumb extends React.Component<Props> {
             return null;
         }
 
-        const {
-            _embedded: {
-                breadcrumb,
-            },
-        } = data;
-        const currentCollection = CollectionBreadcrumb.getCurrentCollectionItem(data);
+        return CollectionBreadcrumb.getCurrentCollectionItem(data);
+    }
 
-        return breadcrumb ? [...breadcrumb, currentCollection] : [currentCollection];
+    @computed get parent(): ?BreadcrumbItem {
+        const {resourceStore} = this.props;
+        const {data} = resourceStore;
+
+        if (!data._embedded) {
+            return null;
+        }
+
+        return data._embedded.parent ?? null;
     }
 
     handleNavigate = (collectionId?: string | number) => {
@@ -45,34 +49,23 @@ class CollectionBreadcrumb extends React.Component<Props> {
 
     render() {
         const Item = Breadcrumb.Item;
-        const breadcrumb = this.breadcrumb;
+        const parent = this.parent;
+        const current = this.current;
         const rootItemTitle = translate('sulu_media.all_media');
 
-        if (!breadcrumb || !breadcrumb.length) {
+        if (!parent || !current) {
             return (
                 <Breadcrumb>
                     <Item>{rootItemTitle}</Item>
                 </Breadcrumb>
             );
-        } else if (breadcrumb.length === 1) {
-            const firstItem = breadcrumb[0];
-
-            return (
-                <Breadcrumb onItemClick={this.handleNavigate}>
-                    <Item>{rootItemTitle}</Item>
-                    <Item>{firstItem.title}</Item>
-                </Breadcrumb>
-            );
         }
-
-        const lastItem = breadcrumb[breadcrumb.length - 1];
-        const penultimateItem = breadcrumb[breadcrumb.length - 2];
 
         return (
             <Breadcrumb onItemClick={this.handleNavigate}>
                 <Item>{rootItemTitle}</Item>
-                <Item value={penultimateItem.id}>...</Item>
-                <Item>{lastItem.title}</Item>
+                <Item value={parent.id}>...</Item>
+                <Item>{current.title}</Item>
             </Breadcrumb>
         );
     }
